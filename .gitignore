@@ -1,0 +1,15 @@
+
+__pycache__
+
+*.md
+*.tex
+*.pdf
+
+*.aux
+*.fls
+*.toc
+*.xdv
+*.log
+*.out
+
+*.fdb_latexmk
