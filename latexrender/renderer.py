@@ -1,6 +1,7 @@
 import mistune
 from mistune import HTMLRenderer
-from utils import escape_latex
+from .utils import escape_latex
+
 
 class LaTeXRenderer(HTMLRenderer):
     """
@@ -29,12 +30,7 @@ class LaTeXRenderer(HTMLRenderer):
 
     # --- 结构处理 ---
     def heading(self, text, level, **kwargs):
-        cmds = {
-            1: "section",
-            2: "subsection",
-            3: "subsubsection",
-            4: "paragraph"
-        }
+        cmds = {1: "section", 2: "subsection", 3: "subsubsection", 4: "paragraph"}
         cmd = cmds.get(level, "textbf")
         return f"\\{cmd}{{{text}}}\n"
 
@@ -52,7 +48,9 @@ class LaTeXRenderer(HTMLRenderer):
     # --- 复杂块处理 ---
     def block_code(self, code, info=None):
         language = info if info else ""
-        return f"\\begin{{lstlisting}}[language={language}]\n{code}\\end{{lstlisting}}\n"
+        return (
+            f"\\begin{{lstlisting}}[language={language}]\n{code}\\end{{lstlisting}}\n"
+        )
 
     def block_quote(self, text):
         return f"\\begin{{quote}}\n{text}\\end{{quote}}\n"
@@ -65,9 +63,9 @@ class LaTeXRenderer(HTMLRenderer):
             f"  \\caption{{{alt}}}\n"
             f"\\end{{figure}}\n"
         )
-    
+
     # --- 数学公式核心逻辑 ---
-    
+
     # 1. 原生 block_math (Markdown 里的块级公式)
     def block_math(self, text, **kwargs):
         # 这里的 text 是 Mistune 默认传的位置参数
@@ -77,51 +75,72 @@ class LaTeXRenderer(HTMLRenderer):
     # 【重点修改】不再依赖位置参数 text，而是直接从 kwargs 里取 'content'
     def display_math(self, content=None, **kwargs):
         # 优先取 content，如果没取到(理论上不可能)，尝试取 raw，再不行取 text
-        final_text = content or kwargs.get('raw') or kwargs.get('text') or ""
-        return f"\\[\n{final_text}\n\\]\n"
+        final_text = content or kwargs.get("raw") or kwargs.get("text") or ""
+        return f"\\[{final_text}\\]\n"
 
     # 3. 原生 inline_math (单个 $)
-    def inline_math(self, text, **kwargs):
-        # 兜底逻辑：如果插件失效，这里可能会收到带 $ 的文本
-        stripped = text.strip()
-        if stripped.startswith('$'):
-            fixed_text = stripped[1:]
-            if fixed_text.endswith('$'):
-                fixed_text = fixed_text[:-1]
-            return f"\\[ {fixed_text} \\]"
-        return f"\\( {text} \\)"
+    def inline_math(self, content=None, **kwargs):
+        final_text = content or kwargs.get("raw") or kwargs.get("text") or ""
+        return f"\\( {final_text} \\)"
 
 
 # --- 自定义插件逻辑 ---
+
 
 def parse_inline_display_math(inline, m, state):
     """
     解析行内的 $$ ... $$
     """
     # 提取公式内容
-    formula_content = m.group(1)
-    
-    # 【重点修改】
+    formula_content = m.group(0)[2:-2]  # Manual extraction
+
     # 我们不使用 'raw'，因为 Mistune 的 render_token 对 'raw' 的处理可能不包含传递位置参数。
     # 我们将内容放入 'attrs' 字典中，Key 叫 'content'。
     # Mistune 渲染时会调用：renderer.display_math(**attrs) -> display_math(content=...)
-    state.append_token({
-        'type': 'display_math', 
-        'attrs': {'content': formula_content}
-    })
+    state.append_token({"type": "display_math", "attrs": {"content": formula_content}})
     return m.end()
 
+
 def plugin_display_math(md):
-    # 正则：匹配 $$...$$，[\s\S] 允许跨行
-    PATTERN = r'\$\$([\s\S]+?)\$\$'
+    # 正则：匹配 $...$，[\s\S] 允许跨行
+    PATTERN = r"\$\$([\s\S]+?)\$\$"
+
     # 注册插件
-    md.inline.register('display_math', PATTERN, parse_inline_display_math, before='inline_math')
+
+    md.inline.register(
+        "display_math", PATTERN, parse_inline_display_math, before="inline_math"
+    )
+
+
+def parse_inline_math(inline, m, state):
+    """
+
+    解析行内的 $ ... $
+
+    """
+
+    formula_content = m.group(0)[1:-1]  # Manual extraction
+
+    state.append_token({"type": "inline_math", "attrs": {"content": formula_content}})
+
+    return m.end()
+
+
+def plugin_inline_math(md):
+
+    # 正则：匹配 $...$
+
+    PATTERN = r"\$(?!\$)([^$]+?)(?<!\$)\$"
+
+    md.inline.register("inline_math", PATTERN, parse_inline_math, before="codespan")
 
 
 def get_markdown_parser():
-    markdown = mistune.create_markdown(
-        renderer=LaTeXRenderer(),
-        plugins=['math', 'table'] 
-    )
+
+    markdown = mistune.create_markdown(renderer=LaTeXRenderer(), plugins=["table"])
+
     plugin_display_math(markdown)
+
+    plugin_inline_math(markdown)
+
     return markdown

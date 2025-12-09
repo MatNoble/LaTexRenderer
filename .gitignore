@@ -1,9 +1,9 @@
 
 __pycache__
 
-*.md
-*.tex
-*.pdf
+doc/*.md
+doc/*.tex
+doc/*.pdf
 
 *.aux
 *.fls

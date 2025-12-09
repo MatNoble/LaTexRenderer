@@ -1,10 +1,15 @@
 # main.py
 import argparse
 import os
-from renderer import get_markdown_parser
-from templates import ARTICLE_TEMPLATE
+from .renderer import get_markdown_parser
+from .templates import ARTICLE_TEMPLATE
 
 def convert_md_to_tex(input_path, output_path):
+    # Ensure output directory exists
+    output_dir = os.path.dirname(output_path)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # 1. 读取 Markdown 文件
     try:
         with open(input_path, 'r', encoding='utf-8') as f:
@@ -41,8 +46,14 @@ def main():
     args = parser.parse_args()
 
     input_file = args.input
-    # 如果没指定输出文件名，默认将 input.md 改为 input.tex
-    output_file = args.output if args.output else os.path.splitext(input_file)[0] + ".tex"
+    # 如果没指定输出文件名，默认将 input.md 改为 doc/input.tex
+    if args.output:
+        output_file = args.output
+    else:
+        # Determine default output path in 'doc' directory
+        base_name = os.path.basename(input_file)
+        file_name_no_ext = os.path.splitext(base_name)[0]
+        output_file = os.path.join("doc", file_name_no_ext + ".tex")
 
     convert_md_to_tex(input_file, output_file)
 
