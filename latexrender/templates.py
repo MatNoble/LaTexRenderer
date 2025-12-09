@@ -3,6 +3,7 @@
 # 基础文章模版
 ARTICLE_TEMPLATE = r"""
 \documentclass{matnoble}
+\usepackage{listings} %% Required for code blocks
 
 \begin{document}
 
@@ -11,9 +12,7 @@ ARTICLE_TEMPLATE = r"""
     \vspace*{1cm}
     \huge \bfseries %(title)s
     \vspace{0.5em}
-    
-    \large \textsf{—— %(subtitle)s ——}
-    
+    %(subtitle_formatted)s
     \vspace{1.5cm}
     
     %% 个人信息卡片 (封面特有)
