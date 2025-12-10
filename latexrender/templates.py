@@ -11,7 +11,7 @@ ARTICLE_TEMPLATE = r"""
 \begin{center}
     \vspace*{1cm}
     \huge \bfseries %(title)s
-    \vspace{0.5em}
+    \vspace{0.5em} \\
     %(subtitle_formatted)s
     \vspace{1.5cm}
     
