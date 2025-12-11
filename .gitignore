@@ -14,3 +14,8 @@ doc/*.pdf
 *.out
 
 *.fdb_latexmk
+
+# Python distribution
+*.egg-info/
+dist/
+build/

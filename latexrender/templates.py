@@ -3,7 +3,9 @@
 # 基础文章模版
 ARTICLE_TEMPLATE = r"""
 \documentclass{matnoble}
-\usepackage{listings} %% Required for code blocks
+
+%% Allow graphics to be found in the parent directory (project root)
+\graphicspath{{../}}
 
 \begin{document}
 

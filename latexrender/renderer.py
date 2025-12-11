@@ -22,11 +22,14 @@ class LaTeXRenderer(HTMLRenderer):
     def strong(self, text):
         return f"\\textbf{{{text}}}"
 
+    def strikethrough(self, text):
+        return f"\\sout{{{text}}}"
+
     def codespan(self, text):
         return f"\\texttt{{{escape_latex(text)}}}"
 
-    def link(self, link, text=None, title=None):
-        return f"\\href{{{link}}}{{{text or link}}}"
+    def link(self, text, url, title=None):
+        return f"\\href{{{url}}}{{{text or url}}}"
 
     # --- 结构处理 ---
     def heading(self, text, level, **kwargs):
@@ -55,14 +58,96 @@ class LaTeXRenderer(HTMLRenderer):
     def block_quote(self, text):
         return f"\\begin{{quote}}\n{text}\\end{{quote}}\n"
 
-    def image(self, src, alt="", title=None):
+    def image(self, alt, url, title=None):
         return (
             f"\\begin{{figure}}[htbp]\n"
             f"  \\centering\n"
-            f"  \\includegraphics[width=0.8\\textwidth]{{{src}}}\n"
+            f"  \\includegraphics[width=0.8\\textwidth]{{{url}}}\n"
             f"  \\caption{{{alt}}}\n"
             f"\\end{{figure}}\n"
         )
+
+    # --- Table rendering ---
+    def table(self, content: str, **attrs) -> str:
+        """
+        Render a table. 
+        Note: Mistune v3 passes the rendered content of the table (thead + tbody) 
+        as a single string 'content'. 'attrs' typically contains 'align'.
+        """
+        alignments = attrs.get('align', [])
+        
+        # Determine number of columns
+        # 1. Try to get from alignments
+        if alignments:
+            num_cols = len(alignments)
+        else:
+            # 2. Fallback: Count columns from the first row of content
+            # Content is roughly "Cell & Cell & \\ \n ..."
+            first_row_end = content.find(r'\\')
+            if first_row_end != -1:
+                first_row = content[:first_row_end]
+                # Count unescaped & (this is a simple heuristic, assuming & is separator)
+                # Since we generate " & " in td/th, we can count that.
+                num_cols = first_row.count('&') + 1
+            else:
+                num_cols = 1 # Default
+
+        # Build column spec
+        col_spec_parts = []
+        if alignments:
+            for a in alignments:
+                if a == 'center':
+                    col_spec_parts.append('c')
+                elif a == 'right':
+                    col_spec_parts.append('r')
+                else:
+                    col_spec_parts.append('l')
+        else:
+            col_spec_parts = ['l'] * num_cols
+            
+        col_spec = "".join(col_spec_parts)
+
+        return (
+            f"\\begin{{center}}\n" # Center the table
+            f"\\begin{{tabular}}{{{col_spec}}}\n"
+            f"\\toprule\n"
+            f"{content}"
+            f"\\bottomrule\n"
+            f"\\end{{tabular}}\n"
+            f"\\end{{center}}\n"
+        )
+
+    def table_head(self, content: str, **kwargs) -> str:
+        # Robust handling: Mistune v3 might not call table_row for the header.
+        # Check if the content already looks like a finished row (ends with \\)
+        stripped = content.strip()
+        if stripped.endswith(r"\\"):
+            return f"{content}\\midrule\n"
+        
+        # If not, assume it's a sequence of cells ending with "& "
+        content = content.rstrip()
+        if content.endswith("&"):
+            content = content[:-1]
+        return f"{content} \\\\\n\\midrule\n"
+
+    def table_body(self, content: str, **kwargs) -> str:
+        return content
+
+    def table_row(self, content: str, **kwargs) -> str:
+        # Remove the trailing separator " & " added by table_cell
+        content = content.rstrip() # Remove trailing whitespace/newlines from cells
+        if content.endswith("&"):
+            content = content[:-1] 
+        return f"{content} \\\\\n"
+
+    def table_cell(self, content: str, **kwargs) -> str:
+        is_header = kwargs.get('header', False)
+        # align = kwargs.get('align') # We are handling alignment in table() column spec currently
+        if is_header:
+            return f"\\textbf{{{content}}} & "
+        return f"{content} & "
+
+    # --- 数学公式核心逻辑 ---
 
     # --- 数学公式核心逻辑 ---
 
@@ -137,7 +222,7 @@ def plugin_inline_math(md):
 
 def get_markdown_parser():
 
-    markdown = mistune.create_markdown(renderer=LaTeXRenderer(), plugins=["table"])
+    markdown = mistune.create_markdown(renderer=LaTeXRenderer(), plugins=["table", "strikethrough"])
 
     plugin_display_math(markdown)
 

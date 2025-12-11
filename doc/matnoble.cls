@@ -22,6 +22,8 @@
 \RequirePackage{booktabs}
 \RequirePackage{multicol}
 \RequirePackage{hyperref} % 让链接可以点击
+\RequirePackage{listings} % 代码块支持
+\RequirePackage[normalem]{ulem} % 删除线支持
 
 % ================= 字体设置 =================
 % 自动检测字体，保证编译不报错

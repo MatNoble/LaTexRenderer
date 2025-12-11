@@ -1,5 +1,7 @@
 # Markdown to LaTeX Converter
 
+[English](README.md) | [简体中文](README_ZH.md)
+
 This project provides a utility to convert Markdown files, especially those containing mathematical expressions, into LaTeX documents. It's designed for academic or technical writing where LaTeX is preferred for its typesetting quality.
 
 ## Project Structure
@@ -26,7 +28,15 @@ The project follows a standardized structure:
 
 ## Installation
 
-This project requires Python 3.8+, `Mistune` (v3), and `python-frontmatter`.
+Before you begin, ensure you have the following prerequisites installed:
+
+### Prerequisites
+
+*   **LaTeX Distribution:** This project relies on `latexmk` for compiling `.tex` files to PDF. You will need a full LaTeX distribution (such as [TeX Live](https://www.tug.org/texlive/) or [MiKTeX](https://miktex.org/)) installed and configured in your system's PATH.
+*   **Python:** Python 3.8 or higher is required.
+*   **Python Packages:** `Mistune` (v3) and `python-frontmatter`.
+
+### Installation Steps
 
 1.  **Clone the repository (if applicable):**
     ```bash
@@ -34,14 +44,35 @@ This project requires Python 3.8+, `Mistune` (v3), and `python-frontmatter`.
     cd <project-directory>
     ```
 
-2.  **Install dependencies:**
+2.  **Install dependencies and the package:**
+    This will install the required dependencies and register the `lxrender` command.
     ```bash
-    pip install mistune python-frontmatter
+    pip install -e .
     ```
 
 ## Usage
 
-To convert a Markdown file to LaTeX, use the `main.py` script within the `latexrender` package. This converter supports **YAML Front Matter** for defining document metadata like title, subtitle, and author.
+### Using the CLI Command (`lxrender`)
+
+After installation, you can use the `lxrender` command from anywhere in your terminal.
+
+```bash
+# Basic conversion
+lxrender input.md
+
+# Convert and compile to PDF
+lxrender input.md --compile
+
+# Convert, compile, and clean auxiliary files
+lxrender input.md --compile --clean
+
+# Specify output file
+lxrender input.md -o output.tex
+```
+
+### Using Python directly
+
+Alternatively, you can still run the script directly via Python:
 
 ### Document Metadata (YAML Front Matter)
 
@@ -72,7 +103,7 @@ After converting Markdown to a `.tex` file, you can optionally compile it to PDF
 
 *   **Compile to PDF**: Use the `--compile` flag.
     ```bash
-    python -m latexrender.main <input.md> --compile
+    lxrender <input.md> --compile
     # This will convert <input.md> to doc/<input>.tex and then compile doc/<input>.tex to PDF.
     ```
 
@@ -80,8 +111,8 @@ After converting Markdown to a `.tex` file, you can optionally compile it to PDF
     If used alone, it cleans auxiliary files for the `.tex` file generated from `<input.md>`.
     If used with `--compile`, it cleans auxiliary files *after* successful compilation.
     ```bash
-    python -m latexrender.main <input.md> --clean
-    python -m latexrender.main <input.md> --compile --clean
+    lxrender <input.md> --clean
+    lxrender <input.md> --compile --clean
     ```
 
 ### Basic Conversion
@@ -89,9 +120,9 @@ After converting Markdown to a `.tex` file, you can optionally compile it to PDF
 If no output path is specified, the generated `.tex` file will be placed in the `doc/` directory with the same base name as the input Markdown file.
 
 ```bash
-python -m latexrender.main <input_markdown_file.md>
+lxrender <input_markdown_file.md>
 # Example:
-python -m latexrender.main my_document.md
+lxrender my_document.md
 # This will generate doc/my_document.tex
 ```
 
@@ -100,10 +131,31 @@ python -m latexrender.main my_document.md
 You can specify a custom output path using the `-o` or `--output` flag.
 
 ```bash
-python -m latexrender.main <input_markdown_file.md> -o <output_file.tex>
+lxrender <input_markdown_file.md> -o <output_file.tex>
 # Example:
-python -m latexrender.main my_document.md -o output/final_doc.tex
+lxrender my_document.md -o output/final_doc.tex
 ```
+
+## Feature Support
+
+The converter currently supports the following Markdown features:
+
+*   **Structure:** Headings (H1-H4 map to LaTeX sections, H5-H6 fallback), Paragraphs, Horizontal Rules.
+*   **Formatting:** Bold (`**text**`), Italic (`*text*`), Inline Code (`code`), Blockquotes (`> text`).
+*   **Lists:** Unordered (`*`, `-`) and Ordered (`1.`) lists, including nested lists.
+*   **Code Blocks:** Fenced code blocks with language support (using LaTeX `listings` package).
+*   **Mathematics:** 
+    *   Inline math: `$E=mc^2$`
+    *   Block math: `$$...$$`
+*   **Links:** Standard Markdown links `[text](url)`.
+*   **Images:** Standard Markdown images `![alt](url)`.
+*   **Strikethrough:** `~~text~~` syntax.
+*   **Metadata:** YAML Front Matter for Title, Subtitle, and Author.
+
+**Currently Unsupported / Limitations:**
+
+*   **Task Lists:** `[ ]` / `[x]` syntax is not supported.
+*   **Footnotes:** `[^1]` syntax is not supported.
 
 ## Testing
 
