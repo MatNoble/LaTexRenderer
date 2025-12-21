@@ -36,3 +36,6 @@ yarn-error.log*
 
 # LaTeX additional
 *.synctex.gz
+
+# Docker
+fonts/

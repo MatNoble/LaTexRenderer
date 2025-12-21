@@ -27,48 +27,44 @@
 ├── tests/                # 单元测试
 ├── start_app.py          # GUI 一键启动脚本
 ├── setup.py              # Python 包安装配置
+├── Dockerfile            # Docker 镜像配置文件
+├── docker-compose.yml    # Docker 容器编排文件
+├── .dockerignore         # Docker 构建忽略文件
 ├── .gitignore            # Git 忽略文件
 └── README.md             # 项目文档
 ```
 
 ## 前置条件
 
-*   **LaTeX 发行版:** 需要安装完整的发行版（如 [TeX Live](https://www.tug.org/texlive/) 或 [MiKTeX](https://miktex.org/)）以支持 PDF 编译。
+*   **Docker (强烈推荐):** 安装 Docker Desktop (Windows/Mac) 或 Docker Engine (Linux)。这是解决 LaTeX 环境配置最简单的方法。
+*   **LaTeX 发行版 (本地):** 需要安装完整的发行版（如 [TeX Live](https://www.tug.org/texlive/) 或 [MiKTeX](https://miktex.org/)）。如果使用 Docker 则无需安装。
 *   **Python:** 需要 Python 3.8 或更高版本。
 *   **Node.js (可选):** 仅当你需要修改并重新构建前端网页界面时需要。
 
-## 安装指南
+## 安装与部署指南
 
-### 1. 快速开始 (Conda / 一键安装)
+### 1. Docker 部署模式 (最简便、环境一致)
 
-我们推荐使用 Conda 环境来管理依赖。
+使用 Docker 运行应用，无需在本地安装 LaTeX 或 Python 包。
 
 ```bash
-# 1. 创建并激活新环境
+# 使用 Docker Compose 启动应用
+docker-compose up -d --build
+```
+- **访问:** 浏览器打开 `http://localhost:8000` 即可使用。
+- **字体:** 内置支持 **思源宋体/黑体 (Noto CJK)**。如有其他自定义字体，请将其放入 `fonts/` 目录并取消 `docker-compose.yml` 中的卷挂载注释。
+- **产物:** 生成的 PDF 将实时同步到本地项目的 `build/` 文件夹。
+
+### 2. 本地开发模式 (手动安装)
+
+#### 第一步：配置 Python 环境
+```bash
 conda create -n lxrender python=3.9 -y
 conda activate lxrender
-
-# 2. 以编辑模式安装项目（自动安装所有依赖）
-pip install -e .
-```
-> **注意：** `pip install -e .` 命令是 **必须** 的。它不仅会自动安装所有 Python 依赖包（包括 GUI 模式所需的 FastAPI），还会将 `lxrender` 命令注册到你的环境中。
-
-### 2. 手动安装
-
-如果你更喜欢直接使用 `pip`：
-
-```bash
-# 一键安装依赖并注册 'lxrender' 命令
 pip install -e .
 ```
 
-## 使用方法
-
-### 1. GUI 可视化模式 (推荐)
-
-**第一步：构建前端界面 (仅首次需要)**
-在启动应用之前，你需要编译 React 界面。这需要安装 Node.js。
-
+#### 第二步：构建前端界面 (仅首次需要)
 ```bash
 cd web
 npm install
@@ -76,15 +72,16 @@ npm run build
 cd ..
 ```
 
-**第二步：启动应用**
-运行一键启动脚本：
+## 使用方法
 
+### 1. GUI 可视化模式 (网页界面)
+
+如果本地运行：
 ```bash
 python start_app.py
 ```
-这将启动 FastAPI 后端并自动在浏览器打开 `http://localhost:8000`。你可以直接在网页中编辑 Markdown、选择模板并实时预览 PDF。
-
-> **注意：** 如果你修改了 `web/` 目录下的源代码，必须重新运行 `npm run build` 才能看到更改。
+如果使用 Docker 运行：
+直接访问 `http://localhost:8000`。
 
 ### 2. 命令行工具 (`lxrender`)
 
@@ -92,76 +89,24 @@ python start_app.py
 # 基本转换
 lxrender input.md
 
-# 使用特定模板（例如：教师教案）
+# 使用教案模板
 lxrender input.md --template matnoble-teaching
 
 # 转换、编译并清理辅助文件
 lxrender input.md --compile --clean
 ```
 
-### 直接使用 Python 运行
-
-此外，你仍然可以直接通过 Python 运行脚本：
-
-### 文档元数据 (YAML Front Matter)
-
-你可以在 Markdown 文件开头使用 YAML 块指定文档特定的元数据。该块必须以 `---` 开始和结束。
-
-示例：
-
-```markdown
----
-title: 我的精彩文章
-subtitle: LaTeX 转换入门
-author: 张三
----
-
-# 你的文章内容
-
-这是你的 Markdown 文档的主要内容。
-```
-
-支持的元数据键：
-*   `title`: 文档主标题。
-*   `subtitle`: 可选副标题（标准模板）。
-*   `author`: 作者姓名。
-*   `course`: 课程名称（教案模板）。
-*   `teaching_class`: 授课班级（教案模板）。
-*   `lesson_type`: 课题类型（教案模板）。
-*   `teaching_time`: 授课时间（教案模板）。
-
 ## 功能支持
 
 *   **多模板支持:** 
     *   `matnoble`: 经典的数学笔记样式，带个人信息卡片。
     *   `matnoble-teaching`: 专业的教师教案样式，带信息表格和**淡淡的横线网格背景**。
-*   **结构:** 标题 (H1-H4 映射到 LaTeX 章节, H5-H6 回退处理), 段落, 水平分割线。
-*   **格式:** 加粗 (`**text**`), 斜体 (`*text*`), 行内代码 (`code`), 引用块 (`> text`)。
-*   **列表:** 无序列表 (`*`, `-`) 和有序列表 (`1.`)，包括嵌套列表。
-*   **代码块:** 带语言支持的围栏代码块 (使用 LaTeX `listings` 包)。
-*   **数学公式:**
-    *   行内公式: `$E=mc^2$`
-    *   块级公式: `$$...$$`
-*   **链接:** 标准 Markdown links `[text](url)`。
-*   **图片:** 标准 Markdown 图片 `![alt](url)`。
-*   **删除线:** `~~text~~` 语法。
-*   **元数据:** 用于标题、副标题和作者的 YAML Front Matter。
-
-**当前不支持 / 局限性:**
-
-*   **任务列表:** `[ ]` / `[x]` 语法不支持。
-*   **脚注:** `[^1]` 语法不支持。
+*   **Docker 优化:** 基于多阶段构建，内置完整的 XeTeX 编译环境。
+*   **数学公式:** 完美支持行内公式 `$E=mc^2$` 和块级公式 `$$...$$`。
+*   **自动清理:** 编译成功后自动运行 `latexmk -c` 清除辅助文件。
 
 ## 测试
 
-单元测试位于 `tests/` 目录下。要运行所有测试，请从项目根目录执行以下命令：
-
 ```bash
 python -m unittest discover tests
-```
-
-或者，运行特定的测试文件：
-
-```bash
-python -m unittest tests.test_math_rendering
 ```

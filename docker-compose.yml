@@ -1,0 +1,13 @@
+services:
+  latex-render:
+    build: .
+    container_name: latex-render-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./build:/app/build
+      # 如果你有额外的特殊字体，可以取消下面这行的注释，并将字体放在本地 fonts 文件夹下
+      # - ./fonts:/usr/local/share/fonts/external-fonts
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1

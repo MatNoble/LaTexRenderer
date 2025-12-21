@@ -27,48 +27,44 @@ The project follows a standardized structure:
 ├── tests/                # Unit tests
 ├── start_app.py          # All-in-one GUI launcher script
 ├── setup.py              # Package installation config
+├── Dockerfile            # Docker image configuration
+├── docker-compose.yml    # Docker container orchestration
+├── .dockerignore         # Files to ignore during Docker build
 ├── .gitignore            # Git ignore file
 └── README.md             # Project documentation
 ```
 
 ## Prerequisites
 
-*   **LaTeX Distribution:** A full distribution like [TeX Live](https://www.tug.org/texlive/) or [MiKTeX](https://miktex.org/) is required for PDF compilation.
-*   **Python:** Python 3.8 or higher is required.
+*   **Docker (Highly Recommended):** Docker Desktop (Windows/Mac) or Docker Engine (Linux). This is the easiest way to manage LaTeX environments.
+*   **LaTeX Distribution (Local):** A full distribution like [TeX Live](https://www.tug.org/texlive/) or [MiKTeX](https://miktex.org/) (Required only if not using Docker).
+*   **Python:** Python 3.8 or higher.
 *   **Node.js (Optional):** Required only if you want to modify and rebuild the frontend web interface.
 
-## Installation
+## Installation & Deployment
 
-### 1. Quick Start (Conda / One-click)
+### 1. Docker Mode (Easiest & Consistent)
 
-We recommend using a Conda environment to manage dependencies.
+Use Docker to run the application without installing LaTeX or Python packages locally.
 
 ```bash
-# 1. Create and activate a new environment
+# Start the application using Docker Compose
+docker-compose up -d --build
+```
+- **Port:** The GUI will be available at `http://localhost:8000`.
+- **Fonts:** Built-in support for **Source Han Serif/Sans (Noto CJK)**. To add custom fonts, place them in a `fonts/` directory and uncomment the volume mapping in `docker-compose.yml`.
+- **Persistence:** Generated PDFs are synced to your local `build/` folder.
+
+### 2. Local Mode (Manual Setup)
+
+#### Step A: Setup Python Environment
+```bash
 conda create -n lxrender python=3.9 -y
 conda activate lxrender
-
-# 2. Install the project in editable mode (Install all dependencies)
-pip install -e .
-```
-> **Note:** The command `pip install -e .` is **essential**. It installs all required Python packages (including FastAPI for the GUI) and registers the `lxrender` command globally in your environment.
-
-### 2. Manual Installation
-
-If you prefer `pip` without Conda, simply run:
-
-```bash
-# Install dependencies and register 'lxrender' in one go
 pip install -e .
 ```
 
-## Usage
-
-### 1. GUI Mode (Recommended)
-
-**Step 1: Build the Frontend (First time only)**
-Before launching the app, you need to compile the React interface. This requires Node.js.
-
+#### Step B: Build Frontend (First time only)
 ```bash
 cd web
 npm install
@@ -76,15 +72,16 @@ npm run build
 cd ..
 ```
 
-**Step 2: Launch the App**
-Run the all-in-one script:
+## Usage
 
+### 1. GUI Mode (Web Interface)
+
+If running locally:
 ```bash
 python start_app.py
 ```
-This will start the FastAPI backend and serve the React frontend at `http://localhost:8000`.
-
-> **Note:** If you modify the source code in `web/`, you must run `npm run build` again to apply changes.
+If running via Docker:
+Simply visit `http://localhost:8000`.
 
 ### 2. CLI Command (`lxrender`)
 
@@ -92,76 +89,24 @@ This will start the FastAPI backend and serve the React frontend at `http://loca
 # Basic conversion
 lxrender input.md
 
-# Use a specific template (e.g., teaching plan)
+# Use teaching plan template
 lxrender input.md --template matnoble-teaching
 
 # Convert and compile to PDF
 lxrender input.md --compile --clean
 ```
 
-### Using Python directly
-
-Alternatively, you can still run the script directly via Python:
-
-### Document Metadata (YAML Front Matter)
-
-You can specify document-specific metadata at the beginning of your Markdown file using a YAML block. This block must start and end with `---`.
-
-Example:
-
-```markdown
----
-title: My Awesome Article
-subtitle: An Introduction to LaTeX Conversion
-author: John Doe
----
-
-# Your Article Content
-
-This is the main content of your Markdown document.
-```
-
-Supported metadata keys:
-*   `title`: Main title.
-*   `subtitle`: Optional subtitle (standard template).
-*   `author`: Author name.
-*   `course`: Course name (teaching template).
-*   `teaching_class`: Target class (teaching template).
-*   `lesson_type`: Type of lesson (teaching template).
-*   `teaching_time`: Date/Time (teaching template).
-
 ## Feature Support
 
 *   **Templates:** 
     *   `matnoble`: Standard math notes with author card.
     *   `matnoble-teaching`: Official teaching plan with info table and **grid background**.
-*   **Structure:** Headings (H1-H4 map to LaTeX sections, H5-H6 fallback), Paragraphs, Horizontal Rules.
-*   **Formatting:** Bold (`**text**`), Italic (`*text*`), Inline Code (`code`), Blockquotes (`> text`).
-*   **Lists:** Unordered (`*`, `-`) and Ordered (`1.`) lists, including nested lists.
-*   **Code Blocks:** Fenced code blocks with language support (using LaTeX `listings` package).
-*   **Mathematics:** 
-    *   Inline math: `$E=mc^2$`
-    *   Block math: `$$...$$`
-*   **Links:** Standard Markdown links `[text](url)`.
-*   **Images:** Standard Markdown images `![alt](url)`.
-*   **Strikethrough:** `~~text~~` syntax.
-*   **Metadata:** YAML Front Matter for Title, Subtitle, and Author.
-
-**Currently Unsupported / Limitations:**
-
-*   **Task Lists:** `[ ]` / `[x]` syntax is not supported.
-*   **Footnotes:** `[^1]` syntax is not supported.
+*   **Docker Optimized:** Pre-configured XeTeX environment with multi-stage build.
+*   **Math:** Full support for Inline math `$E=mc^2$` and Block math `$$...$$`.
+*   **Cleanup:** Automated auxiliary file removal via `latexmk -c`.
 
 ## Testing
 
-Unit tests are located in the `tests/` directory. To run all tests, execute the following command from the project root:
-
 ```bash
 python -m unittest discover tests
-```
-
-Or, to run a specific test file:
-
-```bash
-python -m unittest tests.test_math_rendering
 ```
