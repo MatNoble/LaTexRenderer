@@ -9,6 +9,9 @@ setup(
     install_requires=[
         "mistune>=3.0",
         "python-frontmatter",
+        "fastapi",
+        "uvicorn",
+        "python-multipart",
     ],
     entry_points={
         "console_scripts": [

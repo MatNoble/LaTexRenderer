@@ -11,63 +11,92 @@ The project follows a standardized structure:
 ```
 .
 ├── latexrender/          # Core source code package
-│   ├── __init__.py       # Package initialization
-│   ├── main.py           # Main conversion script
+│   ├── main.py           # CLI entry point & core logic
 │   ├── renderer.py       # Custom Mistune LaTeX renderer
-│   ├── templates.py      # LaTeX templates for document generation
-│   └── utils.py          # Utility functions (e.g., LaTeX escaping)
-├── tests/                # Unit tests for the converter
-│   ├── __init__.py
-│   └── test_math_rendering.py
-├── doc/                  # Documentation, assets, and default output directory
-│   ├── matnoble.cls      # LaTeX class file (example)
-│   └── ...               # Other LaTeX assets or generated output
+│   └── templates.py      # LaTeX templates
+├── server/               # FastAPI backend for GUI
+│   └── main.py           # API endpoints & static file hosting
+├── web/                  # React frontend source code
+│   ├── src/              # React components
+│   ├── dist/             # Compiled static assets (generated after build)
+│   └── package.json      # Frontend dependencies
+├── doc/                  # Documentation, assets, and templates
+│   ├── matnoble.cls      # Standard student note template
+│   ├── matnoble-teaching.cls # Teaching plan template
+│   └── ...               # Assets (logos) & generated output
+├── tests/                # Unit tests
+├── start_app.py          # All-in-one GUI launcher script
+├── setup.py              # Package installation config
 ├── .gitignore            # Git ignore file
-└── README.md             # Project README
+└── README.md             # Project documentation
 ```
+
+## Prerequisites
+
+*   **LaTeX Distribution:** A full distribution like [TeX Live](https://www.tug.org/texlive/) or [MiKTeX](https://miktex.org/) is required for PDF compilation.
+*   **Python:** Python 3.8 or higher is required.
+*   **Node.js (Optional):** Required only if you want to modify and rebuild the frontend web interface.
 
 ## Installation
 
-Before you begin, ensure you have the following prerequisites installed:
+### 1. Quick Start (Conda / One-click)
 
-### Prerequisites
+We recommend using a Conda environment to manage dependencies.
 
-*   **LaTeX Distribution:** This project relies on `latexmk` for compiling `.tex` files to PDF. You will need a full LaTeX distribution (such as [TeX Live](https://www.tug.org/texlive/) or [MiKTeX](https://miktex.org/)) installed and configured in your system's PATH.
-*   **Python:** Python 3.8 or higher is required.
-*   **Python Packages:** `Mistune` (v3) and `python-frontmatter`.
+```bash
+# 1. Create and activate a new environment
+conda create -n lxrender python=3.9 -y
+conda activate lxrender
 
-### Installation Steps
+# 2. Install the project in editable mode (Install all dependencies)
+pip install -e .
+```
+> **Note:** The command `pip install -e .` is **essential**. It installs all required Python packages (including FastAPI for the GUI) and registers the `lxrender` command globally in your environment.
 
-1.  **Clone the repository (if applicable):**
-    ```bash
-    git clone <repository-url>
-    cd <project-directory>
-    ```
+### 2. Manual Installation
 
-2.  **Install dependencies and the package:**
-    This will install the required dependencies and register the `lxrender` command.
-    ```bash
-    pip install -e .
-    ```
+If you prefer `pip` without Conda, simply run:
+
+```bash
+# Install dependencies and register 'lxrender' in one go
+pip install -e .
+```
 
 ## Usage
 
-### Using the CLI Command (`lxrender`)
+### 1. GUI Mode (Recommended)
 
-After installation, you can use the `lxrender` command from anywhere in your terminal.
+**Step 1: Build the Frontend (First time only)**
+Before launching the app, you need to compile the React interface. This requires Node.js.
+
+```bash
+cd web
+npm install
+npm run build
+cd ..
+```
+
+**Step 2: Launch the App**
+Run the all-in-one script:
+
+```bash
+python start_app.py
+```
+This will start the FastAPI backend and serve the React frontend at `http://localhost:8000`.
+
+> **Note:** If you modify the source code in `web/`, you must run `npm run build` again to apply changes.
+
+### 2. CLI Command (`lxrender`)
 
 ```bash
 # Basic conversion
 lxrender input.md
 
+# Use a specific template (e.g., teaching plan)
+lxrender input.md --template matnoble-teaching
+
 # Convert and compile to PDF
-lxrender input.md --compile
-
-# Convert, compile, and clean auxiliary files
 lxrender input.md --compile --clean
-
-# Specify output file
-lxrender input.md -o output.tex
 ```
 
 ### Using Python directly
@@ -93,53 +122,19 @@ This is the main content of your Markdown document.
 ```
 
 Supported metadata keys:
-*   `title`: The main title of your document (defaults to "Untitled Document" if not provided).
-*   `subtitle`: An optional subtitle (will not be displayed if not provided).
-*   `author`: The author(s) of the document (defaults to "Unknown Author" if not provided).
-
-### LaTeX Compilation and Cleanup
-
-After converting Markdown to a `.tex` file, you can optionally compile it to PDF and clean up auxiliary files using `latexmk`. Ensure `latexmk` (part of a full LaTeX distribution like TeX Live or MiKTeX) is installed and available in your system's PATH.
-
-*   **Compile to PDF**: Use the `--compile` flag.
-    ```bash
-    lxrender <input.md> --compile
-    # This will convert <input.md> to doc/<input>.tex and then compile doc/<input>.tex to PDF.
-    ```
-
-*   **Clean auxiliary files**: Use the `--clean` flag.
-    If used alone, it cleans auxiliary files for the `.tex` file generated from `<input.md>`.
-    If used with `--compile`, it cleans auxiliary files *after* successful compilation.
-    ```bash
-    lxrender <input.md> --clean
-    lxrender <input.md> --compile --clean
-    ```
-
-### Basic Conversion
-
-If no output path is specified, the generated `.tex` file will be placed in the `doc/` directory with the same base name as the input Markdown file.
-
-```bash
-lxrender <input_markdown_file.md>
-# Example:
-lxrender my_document.md
-# This will generate doc/my_document.tex
-```
-
-### Specifying Output Path
-
-You can specify a custom output path using the `-o` or `--output` flag.
-
-```bash
-lxrender <input_markdown_file.md> -o <output_file.tex>
-# Example:
-lxrender my_document.md -o output/final_doc.tex
-```
+*   `title`: Main title.
+*   `subtitle`: Optional subtitle (standard template).
+*   `author`: Author name.
+*   `course`: Course name (teaching template).
+*   `teaching_class`: Target class (teaching template).
+*   `lesson_type`: Type of lesson (teaching template).
+*   `teaching_time`: Date/Time (teaching template).
 
 ## Feature Support
 
-The converter currently supports the following Markdown features:
-
+*   **Templates:** 
+    *   `matnoble`: Standard math notes with author card.
+    *   `matnoble-teaching`: Official teaching plan with info table and **grid background**.
 *   **Structure:** Headings (H1-H4 map to LaTeX sections, H5-H6 fallback), Paragraphs, Horizontal Rules.
 *   **Formatting:** Bold (`**text**`), Italic (`*text*`), Inline Code (`code`), Blockquotes (`> text`).
 *   **Lists:** Unordered (`*`, `-`) and Ordered (`1.`) lists, including nested lists.

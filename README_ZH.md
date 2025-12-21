@@ -11,63 +11,92 @@
 ```
 .
 ├── latexrender/          # 核心源代码包
-│   ├── __init__.py       # 包初始化文件
-│   ├── main.py           # 主转换脚本
+│   ├── main.py           # CLI 入口与核心转换逻辑
 │   ├── renderer.py       # 自定义 Mistune LaTeX 渲染器
-│   ├── templates.py      # 用于生成文档的 LaTeX 模板
-│   └── utils.py          # 工具函数（例如：LaTeX 转义）
-├── tests/                # 转换器的单元测试
-│   ├── __init__.py
-│   └── test_math_rendering.py
-├── doc/                  # 文档、资源及默认输出目录
-│   ├── matnoble.cls      # LaTeX 类文件（示例）
-│   └── ...               # 其他 LaTeX 资源或生成的输出文件
+│   └── templates.py      # LaTeX 模板文件
+├── server/               # FastAPI 后端代码 (用于 GUI)
+│   └── main.py           # API 接口与静态文件托管
+├── web/                  # React 前端源代码
+│   ├── src/              # React 组件
+│   ├── dist/             # 编译后的静态资源 (构建后生成)
+│   └── package.json      # 前端依赖配置
+├── doc/                  # 文档、资源及模板
+│   ├── matnoble.cls      # 标准学生笔记模板
+│   ├── matnoble-teaching.cls # 教师教案模板
+│   └── ...               # 资源 (logo) 及生成的输出文件
+├── tests/                # 单元测试
+├── start_app.py          # GUI 一键启动脚本
+├── setup.py              # Python 包安装配置
 ├── .gitignore            # Git 忽略文件
-└── README.md             # 项目 README (英文)
+└── README.md             # 项目文档
 ```
 
-## 安装
+## 前置条件
 
-在开始之前，请确保你已经安装了以下前置条件：
-
-### 前置条件
-
-*   **LaTeX 发行版:** 本项目依赖 `latexmk` 将 `.tex` 文件编译为 PDF。你需要安装完整的 LaTeX 发行版（如 [TeX Live](https://www.tug.org/texlive/) 或 [MiKTeX](https://miktex.org/)）并将其配置到系统的 PATH 环境变量中。
+*   **LaTeX 发行版:** 需要安装完整的发行版（如 [TeX Live](https://www.tug.org/texlive/) 或 [MiKTeX](https://miktex.org/)）以支持 PDF 编译。
 *   **Python:** 需要 Python 3.8 或更高版本。
-*   **Python 包:** `Mistune` (v3) 和 `python-frontmatter`。
+*   **Node.js (可选):** 仅当你需要修改并重新构建前端网页界面时需要。
 
-### 安装步骤
+## 安装指南
 
-1.  **克隆仓库（如果适用）:**
-    ```bash
-    git clone <repository-url>
-    cd <project-directory>
-    ```
+### 1. 快速开始 (Conda / 一键安装)
 
-2.  **安装依赖和项目包:**
-    这将安装所需的依赖项并注册 `lxrender` 命令。
-    ```bash
-    pip install -e .
-    ```
+我们推荐使用 Conda 环境来管理依赖。
+
+```bash
+# 1. 创建并激活新环境
+conda create -n lxrender python=3.9 -y
+conda activate lxrender
+
+# 2. 以编辑模式安装项目（自动安装所有依赖）
+pip install -e .
+```
+> **注意：** `pip install -e .` 命令是 **必须** 的。它不仅会自动安装所有 Python 依赖包（包括 GUI 模式所需的 FastAPI），还会将 `lxrender` 命令注册到你的环境中。
+
+### 2. 手动安装
+
+如果你更喜欢直接使用 `pip`：
+
+```bash
+# 一键安装依赖并注册 'lxrender' 命令
+pip install -e .
+```
 
 ## 使用方法
 
-### 使用命令行工具 (`lxrender`)
+### 1. GUI 可视化模式 (推荐)
 
-安装后，你可以在终端的任何位置使用 `lxrender` 命令。
+**第一步：构建前端界面 (仅首次需要)**
+在启动应用之前，你需要编译 React 界面。这需要安装 Node.js。
+
+```bash
+cd web
+npm install
+npm run build
+cd ..
+```
+
+**第二步：启动应用**
+运行一键启动脚本：
+
+```bash
+python start_app.py
+```
+这将启动 FastAPI 后端并自动在浏览器打开 `http://localhost:8000`。你可以直接在网页中编辑 Markdown、选择模板并实时预览 PDF。
+
+> **注意：** 如果你修改了 `web/` 目录下的源代码，必须重新运行 `npm run build` 才能看到更改。
+
+### 2. 命令行工具 (`lxrender`)
 
 ```bash
 # 基本转换
 lxrender input.md
 
-# 转换并编译为 PDF
-lxrender input.md --compile
+# 使用特定模板（例如：教师教案）
+lxrender input.md --template matnoble-teaching
 
 # 转换、编译并清理辅助文件
 lxrender input.md --compile --clean
-
-# 指定输出文件
-lxrender input.md -o output.tex
 ```
 
 ### 直接使用 Python 运行
@@ -93,53 +122,19 @@ author: 张三
 ```
 
 支持的元数据键：
-*   `title`: 文档的主标题（如果未提供，默认为 "Untitled Document"）。
-*   `subtitle`: 可选副标题（如果未提供，将不显示）。
-*   `author`: 文档的作者（如果未提供，默认为 "Unknown Author"）。
-
-### LaTeX 编译与清理
-
-将 Markdown 转换为 `.tex` 文件后，你可以选择使用 `latexmk` 将其编译为 PDF 并清理辅助文件。请确保你的系统 PATH 中已安装并可用 `latexmk`（通常包含在 TeX Live 或 MiKTeX 等完整 LaTeX 发行版中）。
-
-*   **编译为 PDF**: 使用 `--compile` 标志。
-    ```bash
-    lxrender <input.md> --compile
-    # 这将把 <input.md> 转换为 doc/<input>.tex，然后将 doc/<input>.tex 编译为 PDF。
-    ```
-
-*   **清理辅助文件**: 使用 `--clean` 标志。
-    如果单独使用，它将清理从 `<input.md>` 生成的 `.tex` 文件的辅助文件。
-    如果与 `--compile` 一起使用，它将在编译成功后清理辅助文件。
-    ```bash
-    lxrender <input.md> --clean
-    lxrender <input.md> --compile --clean
-    ```
-
-### 基本转换
-
-如果未指定输出路径，生成的 `.tex` 文件将放置在 `doc/` 目录下，文件名与输入 Markdown 文件相同。
-
-```bash
-lxrender <input_markdown_file.md>
-# 示例:
-lxrender my_document.md
-# 这将生成 doc/my_document.tex
-```
-
-### 指定输出路径
-
-你可以使用 `-o` 或 `--output` 标志指定自定义输出路径。
-
-```bash
-lxrender <input_markdown_file.md> -o <output_file.tex>
-# 示例:
-lxrender my_document.md -o output/final_doc.tex
-```
+*   `title`: 文档主标题。
+*   `subtitle`: 可选副标题（标准模板）。
+*   `author`: 作者姓名。
+*   `course`: 课程名称（教案模板）。
+*   `teaching_class`: 授课班级（教案模板）。
+*   `lesson_type`: 课题类型（教案模板）。
+*   `teaching_time`: 授课时间（教案模板）。
 
 ## 功能支持
 
-转换器目前支持以下 Markdown 功能：
-
+*   **多模板支持:** 
+    *   `matnoble`: 经典的数学笔记样式，带个人信息卡片。
+    *   `matnoble-teaching`: 专业的教师教案样式，带信息表格和**淡淡的横线网格背景**。
 *   **结构:** 标题 (H1-H4 映射到 LaTeX 章节, H5-H6 回退处理), 段落, 水平分割线。
 *   **格式:** 加粗 (`**text**`), 斜体 (`*text*`), 行内代码 (`code`), 引用块 (`> text`)。
 *   **列表:** 无序列表 (`*`, `-`) 和有序列表 (`1.`)，包括嵌套列表。
@@ -147,7 +142,7 @@ lxrender my_document.md -o output/final_doc.tex
 *   **数学公式:**
     *   行内公式: `$E=mc^2$`
     *   块级公式: `$$...$$`
-*   **链接:** 标准 Markdown 链接 `[text](url)`。
+*   **链接:** 标准 Markdown links `[text](url)`。
 *   **图片:** 标准 Markdown 图片 `![alt](url)`。
 *   **删除线:** `~~text~~` 语法。
 *   **元数据:** 用于标题、副标题和作者的 YAML Front Matter。

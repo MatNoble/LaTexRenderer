@@ -1,32 +1,24 @@
 # templates.py
 
-# 基础文章模版
+# 通用文章模版
 ARTICLE_TEMPLATE = r"""
-\documentclass{matnoble}
+\documentclass{%(doc_class)s}
+
+%% --- 核心元数据 ---
+\title{%(title)s}
+\author{%(author)s}
+\date{%(date)s}
+
+%% --- 额外导言区 (根据不同模板动态插入) ---
+%(extra_preamble)s
 
 %% Allow graphics to be found in the parent directory (project root)
 \graphicspath{{../}}
 
 \begin{document}
 
-%% ----------------- 封面/标题区 -----------------
-\begin{center}
-    \vspace*{1cm}
-    \huge \bfseries %(title)s
-    \vspace{0.5em} \\
-    %(subtitle_formatted)s
-    \vspace{1.5cm}
-    
-    %% 个人信息卡片 (封面特有)
-    \begin{tcolorbox}[colback=gray!5!white, colframe=black, width=0.8\textwidth, sharp corners]
-        \centering
-        \textbf{整理：%(author)s} \\[0.5em]
-        \small
-        微信公众号：\textbf{数学思维探究社} \quad | \quad 博客：\url{blog.matnoble.top}
-    \end{tcolorbox}
-\end{center}
-
-\vspace{1cm}
+%% --- 抬头/封面区 ---
+%(header)s
 
 \tableofcontents
 
@@ -40,7 +32,7 @@ ARTICLE_TEMPLATE = r"""
 
 %% ----------------- 正文内容开始 -----------------
 %(content)s
-%% ----------------- 正文内容开始 -----------------
+%% ----------------- 正文内容结束 -----------------
 
 \end{document}
 """

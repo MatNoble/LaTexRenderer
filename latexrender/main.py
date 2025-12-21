@@ -52,7 +52,7 @@ def _clean_latex(filepath):
     return True
 
 
-def convert_md_to_tex(input_path, output_path):
+def convert_md_to_tex(input_path, output_path, doc_class='matnoble'):
     # Ensure output directory exists
     output_dir = os.path.dirname(output_path)
     if output_dir and not os.path.exists(output_dir):
@@ -71,23 +71,62 @@ def convert_md_to_tex(input_path, output_path):
     md_content_body = post.content # Extract Markdown body
     metadata = post.metadata
 
-    # Extract metadata with defaults
+    # --- 元数据提取 ---
     title = metadata.get("title", "Untitled Document")
-    subtitle = metadata.get("subtitle", "")
     author = metadata.get("author", "Unknown Author")
-
-    # Conditionally format subtitle for LaTeX template
-    subtitle_formatted = f"\\large \\textsf{{—— {subtitle} ——}}" if subtitle else ""
+    date = metadata.get("date", r"\today")
+    subtitle = metadata.get("subtitle", "")
     
+    # 教案专用元数据
+    course = metadata.get("course", "")
+    t_class = metadata.get("teaching_class", "")
+    t_time = metadata.get("teaching_time", "")
+    l_type = metadata.get("lesson_type", "")
+
+    # --- 逻辑处理：根据模板选择抬头和导言区 ---
+    extra_preamble = []
+    header = ""
+
+    if doc_class == "matnoble-teaching":
+        # 教师教案逻辑
+        if course: extra_preamble.append(f"\\course{{{course}}}")
+        if t_class: extra_preamble.append(f"\\teachingclass{{{t_class}}}")
+        if t_time: extra_preamble.append(f"\\teachingtime{{{t_time}}}")
+        if l_type: extra_preamble.append(f"\\lessonType{{{l_type}}}")
+        header = "\\maketitle"
+    else:
+        # 默认/学生笔记逻辑
+        subtitle_formatted = f"\\large \\textsf{{—— {subtitle} ——}}" if subtitle else ""
+        header = r"""
+\begin{center}
+    \vspace*{1cm}
+    \huge \bfseries %(title)s
+    \vspace{0.5em} \\
+    %(subtitle_formatted)s
+    \vspace{1.5cm}
+    
+    %% 个人信息卡片
+    \begin{tcolorbox}[colback=gray!5!white, colframe=black, width=0.8\textwidth, sharp corners]
+        \centering
+        \textbf{整理：%(author)s} \\[0.5em]
+        \small
+        微信公众号：\textbf{数学思维探究社} \quad | \quad 博客：\url{blog.matnoble.top}
+    \end{tcolorbox}
+\end{center}
+""" % {"title": title, "subtitle_formatted": subtitle_formatted, "author": author}
+
     # 2. 解析并转换内容 (AST -> LaTeX Body)
     parser = get_markdown_parser()
-    tex_body = parser(md_content_body) # Use content body here
+    tex_body = parser(md_content_body)
 
     # 3. 填充到完整模版中
     full_tex = ARTICLE_TEMPLATE % {
+        "doc_class": doc_class,
         "title": title,
-        "subtitle_formatted": subtitle_formatted, # Use the new formatted key
         "author": author,
+        "date": date,
+        "extra_preamble": "\n".join(extra_preamble),
+        "header": header,
         "content": tex_body
     }
 
@@ -95,7 +134,7 @@ def convert_md_to_tex(input_path, output_path):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(full_tex)
     
-    print(f"Successfully converted '{input_path}' to '{output_path}'")
+    print(f"Successfully converted '{input_path}' to '{output_path}' using template '{doc_class}'")
     return True # Indicate success
 
 def main():
@@ -103,6 +142,7 @@ def main():
     parser = argparse.ArgumentParser(description="Convert Markdown to LaTeX and optionally compile/clean.")
     parser.add_argument("input", help="Path to input Markdown file")
     parser.add_argument("-o", "--output", help="Path to output TeX file")
+    parser.add_argument("-t", "--template", default="matnoble", help="LaTeX document class to use (default: matnoble)")
     parser.add_argument("--compile", action="store_true", 
                         help="Compile the generated .tex file to PDF using xelatex via latexmk.")
     parser.add_argument("--clean", action="store_true", 
@@ -122,7 +162,7 @@ def main():
         output_file = os.path.join("doc", file_name_no_ext + ".tex")
 
     # 1. Convert Markdown to TeX
-    conversion_successful = convert_md_to_tex(input_file, output_file)
+    conversion_successful = convert_md_to_tex(input_file, output_file, doc_class=args.template)
 
     # 2. Optionally compile and clean
     if conversion_successful: # Only proceed if MD to TeX conversion was successful
