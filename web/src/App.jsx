@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Play, Download, Settings, RefreshCw, Copy, Maximize2, Minimize2, Check, Trash2, RotateCcw, Info, ExternalLink, ShieldCheck, Github, Globe, BookOpen, MessageCircle, X } from 'lucide-react';
+import { FileText, Play, Download, Settings, RefreshCw, Copy, Maximize2, Minimize2, Check, Trash2, RotateCcw, Info, ExternalLink, ShieldCheck, Github, Globe, BookOpen, MessageCircle, X, AlertTriangle } from 'lucide-react';
 
 const DEFAULT_MARKDOWN = [
   '---',
@@ -120,6 +120,7 @@ function App() {
   const [isLogExpanded, setIsLogExpanded] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   
   const logEndRef = useRef(null);
 
@@ -222,9 +223,12 @@ function App() {
   };
 
   const handleLoadExample = () => {
-    if (window.confirm("确定要重置为默认示例文档吗？这将覆盖当前编辑区的内容。")) {
-      setMarkdown(DEFAULT_MARKDOWN);
-    }
+    setIsConfirmOpen(true);
+  };
+
+  const confirmLoadExample = () => {
+    setMarkdown(DEFAULT_MARKDOWN);
+    setIsConfirmOpen(false);
   };
 
   return (
@@ -287,6 +291,39 @@ function App() {
           </button>
         </div>
       </header>
+
+      {/* Confirmation Modal for Loading Example */}
+      {isConfirmOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="bg-orange-100 p-2.5 rounded-full">
+                  <AlertTriangle className="w-6 h-6 text-orange-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">确认重置？</h3>
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                确定要加载默认示例文档吗？这将会 <span className="text-red-600 font-semibold">覆盖您当前在编辑区输入的所有内容</span>，且该操作不可撤销。
+              </p>
+            </div>
+            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsConfirmOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-md transition"
+              >
+                取消
+              </button>
+              <button 
+                onClick={confirmLoadExample}
+                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-md shadow-sm transition"
+              >
+                确认重置
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* About Modal */}
       {isAboutOpen && (
