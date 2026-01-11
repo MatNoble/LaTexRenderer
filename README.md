@@ -6,6 +6,15 @@
 
 This project provides a utility to convert Markdown files, especially those containing mathematical expressions, into LaTeX documents. It's designed for academic or technical writing where LaTeX is preferred for its typesetting quality.
 
+## 🔒 Privacy & Security First
+
+**Your data never leaves your machine.** 
+
+We intentionally designed this as a **local-first/self-hosted** tool rather than a public web service. We believe that academic papers, technical reports, and personal notes are private. By running this tool locally via Docker or Python, you ensure:
+*   **Complete Data Privacy:** No document content is ever uploaded to a third-party server.
+*   **Zero Tracking:** We don't collect any information about what you are writing.
+*   **Offline Capability:** Work anywhere without needing an internet connection.
+
 ## Project Structure
 
 The project follows a standardized structure:
