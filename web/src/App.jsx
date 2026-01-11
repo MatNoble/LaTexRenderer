@@ -19,10 +19,10 @@ const DEFAULT_MARKDOWN = [
   '',
   '## 第二章：数学公式',
   '',
-  '行内数学表达式如 $E=mc^2$ 或 $\alpha + \beta = \gamma$。',
+  '行内数学表达式如 $E=mc^2$ 或 $\\alpha + \\beta = \\gamma$。',
   '',
   '$$',
-  '\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}',
+  '\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}',
   '$$',
   '',
   '## 第三章：代码块',
@@ -75,10 +75,27 @@ function App() {
   }, [markdown]);
 
   useEffect(() => {
-// ... (keep logs scroll effect)
+    if (logEndRef.current) {
+      logEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [logs]);
 
-  // ... (keep fetchTemplates)
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch('/api/templates');
+      const data = await res.json();
+      setTemplates(data.templates || []);
+      if (data.templates?.length > 0 && !data.templates.includes(selectedTemplate)) {
+        setSelectedTemplate(data.templates[0]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch templates:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
 
   const handleRender = async () => {
     if (loading) return;
@@ -225,7 +242,11 @@ function App() {
             rel="noreferrer"
             className="flex items-center gap-3 p-3 bg-apple-gray-50 hover:bg-white hover:shadow-apple-sm rounded-apple transition group"
           >
-             <div className="w-8 h-8 rounded-full bg-apple-blue/10 flex items-center justify-center text-apple-blue font-bold text-xs group-hover:bg-apple-blue group-hover:text-white transition-colors">MN</div>
+             <img 
+               src="/matnoble.ico" 
+               alt="MatNoble" 
+               className="w-8 h-8 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-300" 
+             />
              <div className="flex-1 min-w-0">
                <p className="text-xs font-bold truncate">MatNoble</p>
                <p className="text-[10px] text-apple-gray-300 truncate group-hover:text-apple-blue transition-colors">matnoble.top</p>
@@ -391,7 +412,7 @@ function App() {
                  </p>
                  <div className="grid grid-cols-2 gap-3">
                     <a href="https://github.com/MatNoble" target="_blank" className="flex items-center gap-2 p-3 border rounded-apple hover:bg-apple-gray-50 transition text-sm font-medium"><Github className="w-4 h-4" /> GitHub</a>
-                    <a href="https://matnoble.top" target="_blank" className="flex items-center gap-2 p-3 border rounded-apple hover:bg-apple-gray-50 transition text-sm font-medium"><Globe className="w-4 h-4 text-apple-blue" /> 个人门户</a>
+                    <a href="https://blog.matnoble.top" target="_blank" className="flex items-center gap-2 p-3 border rounded-apple hover:bg-apple-gray-50 transition text-sm font-medium"><Globe className="w-4 h-4 text-apple-blue" /> 个人博客</a>
                  </div>
               </div>
            </div>
