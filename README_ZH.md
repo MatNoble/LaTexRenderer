@@ -51,6 +51,11 @@
 # 使用 Docker Compose 启动应用
 docker-compose up -d --build
 ```
+- **重新构建并清理:** 频繁构建会产生大量悬空镜像 (`<none>:<none>`)。你可以使用提供的脚本进行一键构建并自动清理：
+  ```bash
+  chmod +x redeploy.sh
+  ./redeploy.sh
+  ```
 - **访问:** 浏览器打开 `http://localhost:8000` 即可使用。
 - **字体:** 内置支持 **思源宋体/黑体 (Noto CJK)**。如有其他自定义字体，请将其放入 `fonts/` 目录并取消 `docker-compose.yml` 中的卷挂载注释。
 - **产物:** 生成的 PDF 将实时同步到本地项目的 `build/` 文件夹。

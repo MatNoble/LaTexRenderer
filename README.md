@@ -51,6 +51,11 @@ Use Docker to run the application without installing LaTeX or Python packages lo
 # Start the application using Docker Compose
 docker-compose up -d --build
 ```
+- **Rebuild & Cleanup:** To avoid accumulating dangling images (`<none>:<none>`) during development, you can use the provided script:
+  ```bash
+  chmod +x redeploy.sh
+  ./redeploy.sh
+  ```
 - **Port:** The GUI will be available at `http://localhost:8000`.
 - **Fonts:** Built-in support for **Source Han Serif/Sans (Noto CJK)**. To add custom fonts, place them in a `fonts/` directory and uncomment the volume mapping in `docker-compose.yml`.
 - **Persistence:** Generated PDFs are synced to your local `build/` folder.
