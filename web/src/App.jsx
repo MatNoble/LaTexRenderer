@@ -48,7 +48,7 @@ $ E = mc^2 $
 
   const handleRender = async () => {
     setLoading(true);
-    setLogs("Sending request...\n");
+    setLogs("正在发送请求...\n");
     try {
       const res = await fetch('/api/render', {
         method: 'POST',
@@ -62,22 +62,22 @@ $ E = mc^2 $
       
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.detail || "Render failed");
+        throw new Error(errData.detail || "渲染失败");
       }
 
       const data = await res.json();
-      setLogs(prev => prev + "Conversion successful.\n");
+      setLogs(prev => prev + "格式转换成功。\n");
       
       if (data.pdf_url) {
         // Add timestamp to force iframe refresh
         setPdfUrl(`${data.pdf_url}?t=${new Date().getTime()}`);
-        setLogs(prev => prev + "PDF Compiled successfully.\n");
+        setLogs(prev => prev + "PDF 编译成功。\n");
       } else {
-        setLogs(prev => prev + "Warning: PDF URL not returned (maybe latexmk missing?).\n");
+        setLogs(prev => prev + "警告：未返回 PDF 链接（可能是 latexmk 缺失）。\n");
       }
 
     } catch (err) {
-      setLogs(prev => prev + `Error: ${err.message}\n`);
+      setLogs(prev => prev + `错误: ${err.message}\n`);
     } finally {
       setLoading(false);
     }
@@ -95,13 +95,13 @@ $ E = mc^2 $
       <header className="bg-white border-b px-6 py-3 flex items-center justify-between shadow-sm z-10">
         <div className="flex items-center gap-2">
           <FileText className="text-blue-600 w-6 h-6" />
-          <h1 className="text-lg font-bold text-gray-800">MatNoble LaTeX Render</h1>
+          <h1 className="text-lg font-bold text-gray-800">MatNoble LaTeX Renderer</h1>
         </div>
         
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-md">
             <Settings className="w-4 h-4" />
-            <span className="mr-2">Template:</span>
+            <span className="mr-2">模板：</span>
             <select 
               value={selectedTemplate} 
               onChange={(e) => setSelectedTemplate(e.target.value)}
@@ -119,7 +119,7 @@ $ E = mc^2 $
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition disabled:opacity-50"
           >
             {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-            {loading ? 'Compiling...' : 'Generate PDF'}
+            {loading ? '编译中...' : '生成 PDF'}
           </button>
         </div>
       </header>
@@ -132,25 +132,25 @@ $ E = mc^2 $
             value={markdown}
             onChange={(e) => setMarkdown(e.target.value)}
             className="flex-1 w-full p-6 bg-transparent outline-none resize-none font-mono text-sm leading-relaxed"
-            placeholder="Type your markdown here..."
+            placeholder="在此输入 Markdown 内容..."
           />
           {/* Logs Panel */}
           <div className={`transition-all duration-300 ease-in-out bg-gray-900 text-gray-300 flex flex-col border-t border-gray-700 ${isLogExpanded ? 'h-3/4' : 'h-32'}`}>
             {/* Log Header */}
             <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700 select-none">
-                 <span className="font-bold text-gray-400 text-xs tracking-wider">SYSTEM LOGS</span>
+                 <span className="font-bold text-gray-400 text-xs tracking-wider">系统日志</span>
                  <div className="flex items-center gap-2">
                      <button 
                         onClick={handleCopyLogs} 
                         className="p-1.5 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white transition flex items-center justify-center"
-                        title="Copy logs"
+                        title="复制日志"
                      >
                         {copySuccess ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                      </button>
                      <button 
                         onClick={() => setIsLogExpanded(!isLogExpanded)} 
                         className="p-1.5 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white transition flex items-center justify-center"
-                        title={isLogExpanded ? "Minimize" : "Maximize"}
+                        title={isLogExpanded ? "最小化" : "最大化"}
                      >
                         {isLogExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                      </button>
@@ -170,12 +170,12 @@ $ E = mc^2 $
             <iframe 
               src={pdfUrl} 
               className="w-full h-full" 
-              title="PDF Preview"
+              title="PDF 预览"
             />
           ) : (
             <div className="text-gray-500 flex flex-col items-center">
               <FileText className="w-16 h-16 mb-4 opacity-20" />
-              <p>Click "Generate PDF" to view preview</p>
+              <p>点击“生成 PDF”查看预览</p>
             </div>
           )}
         </div>
