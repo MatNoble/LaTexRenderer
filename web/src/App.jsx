@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Play, Download, Settings, RefreshCw, Copy, Maximize2, Minimize2, Check, Trash2, RotateCcw } from 'lucide-react';
+import { FileText, Play, Download, Settings, RefreshCw, Copy, Maximize2, Minimize2, Check, Trash2, RotateCcw, Info, ExternalLink, ShieldCheck, Github, Globe, BookOpen, MessageCircle, X } from 'lucide-react';
 
 const DEFAULT_MARKDOWN = [
   '---',
@@ -119,6 +119,7 @@ function App() {
   
   const [isLogExpanded, setIsLogExpanded] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
   
   const logEndRef = useRef(null);
 
@@ -232,6 +233,13 @@ function App() {
         <div className="flex items-center gap-2">
           <img src="/icons/web-app-manifest-192x192.png" alt="Logo" className="w-8 h-8 rounded-md" />
           <h1 className="text-lg font-bold text-gray-800">MatNoble LaTeX Renderer</h1>
+          <button 
+            onClick={() => setIsAboutOpen(true)}
+            className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition"
+            title="关于项目与使用说明"
+          >
+            <Info className="w-5 h-5" />
+          </button>
         </div>
         
         <div className="flex items-center gap-3">
@@ -279,6 +287,93 @@ function App() {
           </button>
         </div>
       </header>
+
+      {/* About Modal */}
+      {isAboutOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={() => setIsAboutOpen(false)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-200">
+                  <FileText className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">关于项目</h2>
+                  <p className="text-gray-500 text-sm">高效、私密、优雅的 Markdown 转 LaTeX 方案</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <section className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-blue-700 font-bold mb-2">
+                    <ShieldCheck className="w-5 h-5" />
+                    <h3 className="text-sm">隐私声明</h3>
+                  </div>
+                  <p className="text-xs text-blue-800 leading-relaxed">
+                    本项目坚持 <strong>本地优先 (Local-first)</strong> 设计理念。您的文档内容仅在您本地环境处理，永远不会上传到第三方服务器。我们尊重并保护每一份学术成果和个人笔记的隐私。
+                  </p>
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wider">使用说明</h3>
+                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
+                    <li>支持标准的 Markdown 语法。</li>
+                    <li>数学公式请使用 <code className="bg-gray-100 px-1 rounded text-blue-600">$...$</code> (行内) 或 <code className="bg-gray-100 px-1 rounded text-blue-600">$$...$$</code> (块级)。</li>
+                    <li>生成的 PDF 将自动使用 Noto CJK 字体支持中文排版。</li>
+                    <li>点击右上方“加载示例”可以快速体验所有支持的功能。</li>
+                  </ul>
+                </section>
+
+                <hr className="border-gray-100" />
+
+                <section>
+                  <h3 className="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wider">作者信息</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <a href="https://github.com/MatNoble" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition group">
+                      <div className="bg-gray-100 p-2 rounded-md group-hover:bg-white transition"><Github className="w-5 h-5 text-gray-700" /></div>
+                      <div>
+                        <div className="text-sm font-bold">GitHub</div>
+                        <div className="text-xs text-gray-500">@MatNoble</div>
+                      </div>
+                      <ExternalLink className="w-3.5 h-3.5 ml-auto text-gray-300 group-hover:text-blue-500" />
+                    </a>
+                    <a href="https://matnoble.top" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition group">
+                      <div className="bg-blue-50 p-2 rounded-md group-hover:bg-white transition"><Globe className="w-5 h-5 text-blue-600" /></div>
+                      <div>
+                        <div className="text-sm font-bold">个人门户</div>
+                        <div className="text-xs text-gray-500">matnoble.top</div>
+                      </div>
+                      <ExternalLink className="w-3.5 h-3.5 ml-auto text-gray-300 group-hover:text-blue-500" />
+                    </a>
+                    <a href="https://blog.matnoble.top" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition group">
+                      <div className="bg-green-50 p-2 rounded-md group-hover:bg-white transition"><BookOpen className="w-5 h-5 text-green-600" /></div>
+                      <div>
+                        <div className="text-sm font-bold">个人博客</div>
+                        <div className="text-xs text-gray-500">blog.matnoble.top</div>
+                      </div>
+                      <ExternalLink className="w-3.5 h-3.5 ml-auto text-gray-300 group-hover:text-blue-500" />
+                    </a>
+                    <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+                      <div className="bg-orange-50 p-2 rounded-md"><MessageCircle className="w-5 h-5 text-orange-600" /></div>
+                      <div>
+                        <div className="text-sm font-bold">微信公众号</div>
+                        <div className="text-xs text-gray-500">数学思维探究社</div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 flex overflow-hidden">
         <div className="w-1/2 flex flex-col border-r bg-gray-50">
