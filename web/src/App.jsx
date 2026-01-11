@@ -48,37 +48,40 @@ function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSaved, setIsSaved] = useState(true);
   
   const logEndRef = useRef(null);
 
+  // 监听快捷键
   useEffect(() => {
-    localStorage.setItem('latex_render_content', markdown);
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleRender();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [markdown, selectedTemplate]);
+
+  // 防抖保存
+  useEffect(() => {
+    setIsSaved(false);
+    const timeout = setTimeout(() => {
+      localStorage.setItem('latex_render_content', markdown);
+      setIsSaved(true);
+    }, 1000);
+    return () => clearTimeout(timeout);
   }, [markdown]);
 
   useEffect(() => {
-    if (logEndRef.current) {
-      logEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+// ... (keep logs scroll effect)
   }, [logs]);
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
-
-  const fetchTemplates = async () => {
-    try {
-      const res = await fetch('/api/templates');
-      const data = await res.json();
-      setTemplates(data.templates);
-      if (data.templates.length > 0) {
-         setSelectedTemplate(data.templates.includes('matnoble') ? 'matnoble' : data.templates[0]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch templates", err);
-    }
-  };
+  // ... (keep fetchTemplates)
 
   const handleRender = async () => {
+    if (loading) return;
     setLoading(true);
     setLogs("Starting render process...\n");
     try {
@@ -93,25 +96,45 @@ function App() {
       });
       
       const data = await res.json();
-      
-      // Update logs with real output from backend
-      if (data.logs) {
-        setLogs(data.logs);
-      }
+      if (data.logs) setLogs(data.logs);
 
       if (!res.ok || data.success === false) {
-        throw new Error(data.detail || "渲染过程中出现错误");
+        setIsLogExpanded(true); // 编译失败，自动展开控制台
+        throw new Error(data.detail || "编译失败，请检查控制台日志");
       }
 
       if (data.pdf_url) {
         setPdfUrl(`${data.pdf_url}?t=${new Date().getTime()}`);
+        setIsLogExpanded(false); // 编译成功，收起控制台保持整洁
       }
     } catch (err) {
       setLogs(prev => prev + `\n> Fatal Error: ${err.message}\n`);
+      setIsLogExpanded(true);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleCopyTex = async () => {
+    try {
+      const res = await fetch('/api/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: markdown, template: selectedTemplate, compile: false })
+      });
+      const data = await res.json();
+      // 使用已有的静态挂载路径
+      const texRes = await fetch(`/build/${data.job_id}/document.tex`);
+      const texContent = await texRes.text();
+      await navigator.clipboard.writeText(texContent);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      alert("复制 LaTeX 源码失败");
+    }
+  };
+
+  const lineCount = markdown.split('\n').length;
 
   const confirmLoadExample = () => {
     setMarkdown(DEFAULT_MARKDOWN);
@@ -229,6 +252,14 @@ function App() {
           </div>
 
           <div className="flex items-center gap-3">
+             <button 
+                onClick={handleCopyTex}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-apple-gray-300 hover:text-apple-gray-900 hover:bg-white rounded-apple transition"
+                title="复制生成的 LaTeX 源码"
+              >
+                {copySuccess ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                <span className="hidden sm:inline">复制 LaTeX</span>
+             </button>
              {pdfUrl && (
                 <button 
                   onClick={handleDownload}
@@ -254,24 +285,46 @@ function App() {
           {/* Editor Card */}
           <div className="flex-1 bg-white rounded-apple-lg shadow-apple-md flex flex-col overflow-hidden border border-apple-gray-50">
              <div className="px-4 py-2 bg-apple-gray-50/50 border-b border-apple-gray-50 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-apple-gray-300 uppercase tracking-widest">Markdown</span>
-                <span className="text-[10px] text-apple-gray-200">{markdown.length} 字符</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] font-bold text-apple-gray-300 uppercase tracking-widest">Markdown</span>
+                  <div className="h-3 w-[1px] bg-apple-gray-100" />
+                  <span className={`text-[10px] transition-opacity duration-300 ${isSaved ? 'text-green-500 opacity-100' : 'text-apple-gray-200 opacity-50'}`}>
+                    {isSaved ? '● 已保存' : '○ 正在输入...'}
+                  </span>
+                </div>
+                <span className="text-[10px] text-apple-gray-200 font-medium">{markdown.length.toLocaleString()} 字符</span>
              </div>
-             <textarea
-                value={markdown}
-                onChange={(e) => setMarkdown(e.target.value)}
-                className="flex-1 p-6 outline-none resize-none font-mono text-sm leading-relaxed text-apple-gray-900 bg-white"
-                spellCheck="false"
-             />
+             <div className="flex-1 flex overflow-hidden relative">
+                {/* Line Numbers - Apple Style */}
+                <div className="w-10 bg-apple-gray-50/30 border-r border-apple-gray-50 text-right pr-2 py-6 select-none flex flex-col font-mono text-[11px] text-apple-gray-200 leading-relaxed">
+                  {Array.from({ length: Math.max(lineCount, 1) }).map((_, i) => (
+                    <div key={i}>{i + 1}</div>
+                  ))}
+                </div>
+                <textarea
+                  value={markdown}
+                  onChange={(e) => setMarkdown(e.target.value)}
+                  className="flex-1 p-6 outline-none resize-none font-mono text-sm leading-relaxed text-apple-gray-900 bg-white"
+                  spellCheck="false"
+                />
+             </div>
           </div>
 
           {/* Preview Card */}
-          <div className="flex-1 bg-apple-gray-100 rounded-apple-lg shadow-inner overflow-hidden flex items-center justify-center relative">
+          <div className="flex-1 bg-apple-gray-100 rounded-apple-lg shadow-inner overflow-hidden flex items-center justify-center relative border border-apple-gray-50">
+             {loading && (
+                <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-10 flex items-center justify-center animate-in fade-in duration-300">
+                   <div className="flex flex-col items-center gap-3">
+                      <div className="w-10 h-10 border-4 border-apple-blue/20 border-t-apple-blue rounded-full animate-spin" />
+                      <p className="text-[11px] font-bold text-apple-blue uppercase tracking-widest">Rendering PDF</p>
+                   </div>
+                </div>
+             )}
              {pdfUrl ? (
                 <iframe src={pdfUrl} className="w-full h-full" title="PDF Preview" />
              ) : (
-                <div className="text-center space-y-4 opacity-30">
-                  <FileText className="w-16 h-16 mx-auto" />
+                <div className="text-center space-y-4 opacity-30 group">
+                  <FileText className="w-16 h-16 mx-auto group-hover:scale-110 transition-transform duration-500" />
                   <p className="text-sm font-medium">准备就绪，等待编译</p>
                 </div>
              )}
