@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Play, Download, Settings, RefreshCw } from 'lucide-react';
+import { FileText, Play, Download, Settings, RefreshCw, Copy, Maximize2, Minimize2, Check } from 'lucide-react';
 
 function App() {
   const [markdown, setMarkdown] = useState(`---\ntitle: 示例文档
@@ -22,6 +22,10 @@ $ E = mc^2 $
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState("");
+  
+  // New State for Log UI
+  const [isLogExpanded, setIsLogExpanded] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     fetchTemplates();
@@ -78,6 +82,12 @@ $ E = mc^2 $
       setLoading(false);
     }
   };
+  
+  const handleCopyLogs = () => {
+    navigator.clipboard.writeText(logs);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
+  };
 
   return (
     <div className="h-screen flex flex-col">
@@ -125,9 +135,32 @@ $ E = mc^2 $
             placeholder="Type your markdown here..."
           />
           {/* Logs Panel */}
-          <div className="h-32 bg-gray-900 text-gray-300 p-3 text-xs font-mono overflow-y-auto border-t border-gray-700">
-            <div className="font-bold text-gray-500 mb-1">SYSTEM LOGS</div>
-            <pre className="whitespace-pre-wrap">{logs}</pre>
+          <div className={`transition-all duration-300 ease-in-out bg-gray-900 text-gray-300 flex flex-col border-t border-gray-700 ${isLogExpanded ? 'h-3/4' : 'h-32'}`}>
+            {/* Log Header */}
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700 select-none">
+                 <span className="font-bold text-gray-400 text-xs tracking-wider">SYSTEM LOGS</span>
+                 <div className="flex items-center gap-2">
+                     <button 
+                        onClick={handleCopyLogs} 
+                        className="p-1.5 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white transition flex items-center justify-center"
+                        title="Copy logs"
+                     >
+                        {copySuccess ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                     </button>
+                     <button 
+                        onClick={() => setIsLogExpanded(!isLogExpanded)} 
+                        className="p-1.5 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white transition flex items-center justify-center"
+                        title={isLogExpanded ? "Minimize" : "Maximize"}
+                     >
+                        {isLogExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                     </button>
+                 </div>
+            </div>
+            
+            {/* Log Content */}
+            <div className="flex-1 p-3 text-xs font-mono overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+                <pre className="whitespace-pre-wrap font-mono leading-tight">{logs}</pre>
+            </div>
           </div>
         </div>
 
