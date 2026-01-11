@@ -106,7 +106,10 @@ def render_pdf(request: RenderRequest):
                     if ext.lower() in image_extensions:
                         shutil.copy2(os.path.join(doc_dir, item), os.path.join(build_dir, item))
 
-            cmd = ["latexmk", "-xelatex", "-interaction=nonstopmode", tex_filename]
+            # Use -pdf but override pdflatex to use xelatex. 
+            # This relies on xelatex producing PDF directly (default behavior) 
+            # rather than latexmk managing the xdv->pdf step which was failing.
+            cmd = ["latexmk", "-pdf", "-pdflatex=xelatex %O %S", "-interaction=nonstopmode", tex_filename]
             result = subprocess.run(
                 cmd, 
                 cwd=build_dir, 
@@ -129,7 +132,8 @@ def render_pdf(request: RenderRequest):
                     stderr=subprocess.PIPE
                 )
             else:
-                raise HTTPException(status_code=500, detail=f"LaTeX compilation failed.\nLog:\n{result.stdout}")
+                # Include both stdout and stderr in the error message
+                raise HTTPException(status_code=500, detail=f"LaTeX compilation failed.\nLog:\n{compile_log}")
                 
         except Exception as e:
              raise HTTPException(status_code=500, detail=f"Compilation error: {str(e)}")

@@ -10,6 +10,7 @@
 \LoadClass[12pt, a4paper]{article}
 
 % ================= 宏包加载 =================
+\RequirePackage[dvipsnames]{xcolor}
 \RequirePackage{amsmath, amssymb, amsfonts}
 \RequirePackage[top=2cm, bottom=2.5cm, left=2cm, right=2cm]{geometry}
 \RequirePackage{xeCJK}
@@ -43,7 +44,6 @@
 \punctstyle{kaiming}
 \RequirePackage{setspace}
 \setstretch{1.4} 
-\RequirePackage[dvipsnames]{xcolor}
 \RequirePackage{mathpazo}       
 \RequirePackage[euler-digits,small]{eulervm} 
 \newcommand*{\dif}{\mathop{}\!\mathrm{d}}
