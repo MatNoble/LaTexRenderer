@@ -1,22 +1,27 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from pathlib import Path
 import os
-import glob
+import uuid
 import subprocess
-import shutil
-from latexrender.main import convert_md_to_tex
 
-app = FastAPI()
+# Import the core renderer
+from latexrender.main import LaTeXRenderer
 
-# Ensure build directory exists for static mounting
-if not os.path.exists("build"):
-    os.makedirs("build")
+app = FastAPI(title="MatNoble LaTeX Renderer API")
+
+# Setup paths
+BASE_DIR = Path(__file__).parent.parent
+BUILD_DIR = BASE_DIR / "build"
+DOC_DIR = BASE_DIR / "doc"
+BUILD_DIR.mkdir(exist_ok=True)
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for local dev convenience
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,133 +33,100 @@ class RenderRequest(BaseModel):
     compile: bool = False
 
 @app.get("/api/templates")
-def get_templates():
-    """List available LaTeX templates (.cls files) in the doc directory."""
-    doc_dir = os.path.join(os.getcwd(), "doc")
-    templates = []
-    if os.path.exists(doc_dir):
-        # Find all .cls files
-        cls_files = glob.glob(os.path.join(doc_dir, "*.cls"))
-        for f in cls_files:
-            # Extract filename without extension (e.g., "matnoble")
-            basename = os.path.splitext(os.path.basename(f))[0]
-            templates.append(basename)
+async def get_templates():
+    """Returns a list of available LaTeX templates."""
+    if not DOC_DIR.exists():
+        return {"templates": []}
+    
+    cls_files = list(DOC_DIR.glob("*.cls"))
+    templates = [f.stem for f in cls_files]
     return {"templates": templates}
 
 @app.post("/api/render")
-def render_pdf(request: RenderRequest):
+async def render_pdf(request: RenderRequest):
     """
-    Convert Markdown content to LaTeX and optionally compile to PDF.
-    Returns the paths to the generated files.
+    Main endpoint for rendering. Captures and returns real-time logs.
     """
-    # Create a temporary file for the markdown content
-    # We use a fixed name in a temp folder inside existing doc structure or a new build folder
-    # For simplicity, let's use 'build' folder in root
-    build_dir = os.path.join(os.getcwd(), "build")
-    if not os.path.exists(build_dir):
-        os.makedirs(build_dir)
+    job_id = str(uuid.uuid4())[:8]
+    job_dir = BUILD_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    
+    md_path = job_dir / "document.md"
+    tex_path = job_dir / "document.tex"
+    pdf_path = job_dir / "document.pdf"
+
+    logs = []
+
+    try:
+        # 1. Write the source content
+        md_path.write_text(request.content, encoding="utf-8")
+        logs.append(f"> Writing document.md... Done.")
         
-    md_filename = "document.md"
-    tex_filename = "document.tex"
-    
-    md_path = os.path.join(build_dir, md_filename)
-    tex_path = os.path.join(build_dir, tex_filename)
-    
-    # 1. Write Markdown content to file
-    try:
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write(request.content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to write markdown file: {str(e)}")
-    
-    # 2. Convert to LaTeX using the shared core logic
-    try:
-        success = convert_md_to_tex(md_path, tex_path, doc_class=request.template)
-        if not success:
-            raise HTTPException(status_code=500, detail="Markdown to LaTeX conversion failed.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Conversion error: {str(e)}")
-
-    pdf_path = None
-    compile_log = ""
-    
-    # 3. Optionally Compile
-    if request.compile:
-        # Check if latexmk exists
-        if shutil.which("latexmk") is None:
-             return {
-                "success": True,
-                "tex_path": tex_path,
-                "pdf_path": None,
-                "message": "LaTeX generated, but latexmk not found. Cannot compile PDF."
-            }
+        # 2. Initialize and run core renderer (conversion only)
+        renderer = LaTeXRenderer(
+            input_path=str(md_path), 
+            output_path=str(tex_path), 
+            template=request.template
+        )
+        
+        if not renderer.render():
+            logs.append("> Error: Markdown to LaTeX conversion failed.")
+            return {"success": False, "logs": "\n".join(logs)}
+        
+        logs.append(f"> LaTeX source generated at {tex_path.name}")
             
-        try:
-            # Copy specific resources to build dir
-            doc_dir = os.path.join(os.getcwd(), "doc")
-            if os.path.exists(doc_dir):
-                # 1. Copy the selected class file
-                cls_src = os.path.join(doc_dir, f"{request.template}.cls")
-                cls_dst = os.path.join(build_dir, f"{request.template}.cls")
-                if os.path.exists(cls_src):
-                    shutil.copy2(cls_src, cls_dst)
-                
-                # 2. Copy image resources
-                image_extensions = {'.png', '.jpg', '.jpeg', '.pdf'}
-                for item in os.listdir(doc_dir):
-                    _, ext = os.path.splitext(item)
-                    if ext.lower() in image_extensions:
-                        shutil.copy2(os.path.join(doc_dir, item), os.path.join(build_dir, item))
-
-            # Use -pdf but override pdflatex to use xelatex. 
-            # This relies on xelatex producing PDF directly (default behavior) 
-            # rather than latexmk managing the xdv->pdf step which was failing.
-            cmd = ["latexmk", "-pdf", "-pdflatex=xelatex %O %S", "-interaction=nonstopmode", tex_filename]
-            result = subprocess.run(
+        # 3. Handle Compilation manually to capture logs
+        if request.compile:
+            logs.append("> Starting LaTeXmk compilation...")
+            
+            # Replicate resource copying (since we aren't calling renderer.compile)
+            renderer._copy_resources(DOC_DIR)
+            
+            cmd = ["latexmk", "-pdf", "-pdflatex=xelatex %O %S", "-interaction=nonstopmode", "document.tex"]
+            
+            # Run compilation and capture output
+            process = subprocess.run(
                 cmd, 
-                cwd=build_dir, 
-                stdout=subprocess.PIPE, 
-                stderr=subprocess.PIPE,
-                encoding="utf-8" # assuming utf-8 output from latexmk
+                cwd=job_dir, 
+                capture_output=True, 
+                text=True,
+                encoding="utf-8"
             )
             
-            compile_log = result.stdout + "\n" + result.stderr
+            # Combine stdout and stderr
+            compile_output = process.stdout + "\n" + process.stderr
+            logs.append(compile_output)
             
-            if result.returncode == 0:
-                pdf_filename = "document.pdf"
-                pdf_path = os.path.join(build_dir, pdf_filename)
-                
-                # 编译成功后清理辅助文件
-                subprocess.run(
-                    ["latexmk", "-c", tex_filename], 
-                    cwd=build_dir,
-                    stdout=subprocess.PIPE, 
-                    stderr=subprocess.PIPE
-                )
-            else:
-                # Include both stdout and stderr in the error message
-                raise HTTPException(status_code=500, detail=f"LaTeX compilation failed.\nLog:\n{compile_log}")
-                
-        except Exception as e:
-             raise HTTPException(status_code=500, detail=f"Compilation error: {str(e)}")
+            if process.returncode != 0:
+                logs.append(f"> Error: Compilation failed with exit code {process.returncode}")
+                return {
+                    "success": False, 
+                    "logs": "\n".join(logs),
+                    "detail": "LaTeX compilation failed."
+                }
+            
+            logs.append("> Compilation successful. Cleaning up...")
+            renderer.clean()
+            logs.append("> Ready.")
 
-    return {
-        "success": True,
-        "tex_path": tex_path,
-        "pdf_path": pdf_path,
-        "pdf_url": f"/build/{os.path.basename(pdf_path)}" if pdf_path else None
-    }
+        return {
+            "success": True,
+            "job_id": job_id,
+            "logs": "\n".join(logs),
+            "pdf_url": f"/build/{job_id}/document.pdf" if pdf_path.exists() else None
+        }
 
-from fastapi.staticfiles import StaticFiles
+    except Exception as e:
+        logs.append(f"> System Error: {str(e)}")
+        return {"success": False, "logs": "\n".join(logs)}
 
-# Mount the build directory to serve generated PDFs
-app.mount("/build", StaticFiles(directory="build"), name="build")
+# Static file serving
+app.mount("/build", StaticFiles(directory=str(BUILD_DIR)), name="build")
 
-# Mount the web frontend (static files)
-# Check if web/dist exists (it should after npm run build)
-web_dist = os.path.join(os.getcwd(), "web", "dist")
-if os.path.exists(web_dist):
-    app.mount("/", StaticFiles(directory=web_dist, html=True), name="static")
+# Serve Frontend
+WEB_DIST = BASE_DIR / "web" / "dist"
+if WEB_DIST.exists():
+    app.mount("/", StaticFiles(directory=str(WEB_DIST), html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn

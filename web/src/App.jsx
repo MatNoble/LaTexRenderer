@@ -92,18 +92,22 @@ function App() {
         })
       });
       
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || "Render failed");
+      const data = await res.json();
+      
+      // Update logs with real output from backend
+      if (data.logs) {
+        setLogs(data.logs);
       }
 
-      const data = await res.json();
+      if (!res.ok || data.success === false) {
+        throw new Error(data.detail || "渲染过程中出现错误");
+      }
+
       if (data.pdf_url) {
         setPdfUrl(`${data.pdf_url}?t=${new Date().getTime()}`);
-        setLogs(prev => prev + "Success: PDF generated successfully.\n");
       }
     } catch (err) {
-      setLogs(prev => prev + `Error: ${err.message}\n`);
+      setLogs(prev => prev + `\n> Fatal Error: ${err.message}\n`);
     } finally {
       setLoading(false);
     }
