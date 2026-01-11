@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 import uuid
 import subprocess
+import shutil
 
 # Import the core renderer
 from latexrender.main import LaTeXRenderer
@@ -17,6 +18,23 @@ BASE_DIR = Path(__file__).parent.parent
 BUILD_DIR = BASE_DIR / "build"
 DOC_DIR = BASE_DIR / "doc"
 BUILD_DIR.mkdir(exist_ok=True)
+
+MAX_JOBS = 20
+
+def cleanup_old_jobs():
+    """Keep only the most recent MAX_JOBS in the build directory."""
+    try:
+        # Get all subdirectories in BUILD_DIR
+        dirs = [d for d in BUILD_DIR.iterdir() if d.is_dir()]
+        # Sort by modification time (oldest first)
+        dirs.sort(key=lambda x: x.stat().st_mtime)
+        
+        # Remove oldest if count exceeds MAX_JOBS
+        if len(dirs) > MAX_JOBS:
+            for d in dirs[:-MAX_JOBS]:
+                shutil.rmtree(d, ignore_errors=True)
+    except Exception as e:
+        print(f"Cleanup error: {e}")
 
 # Configure CORS
 app.add_middleware(
@@ -47,6 +65,7 @@ async def render_pdf(request: RenderRequest):
     """
     Main endpoint for rendering. Captures and returns real-time logs.
     """
+    cleanup_old_jobs()
     job_id = str(uuid.uuid4())[:8]
     job_dir = BUILD_DIR / job_id
     job_dir.mkdir(parents=True, exist_ok=True)

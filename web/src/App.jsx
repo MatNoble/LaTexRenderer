@@ -294,6 +294,7 @@ function App() {
                 onClick={handleRender}
                 disabled={loading}
                 className="flex items-center gap-2 px-5 py-2 bg-apple-blue text-white rounded-apple font-semibold text-sm shadow-lg shadow-apple-blue/20 hover:scale-[1.02] active:scale-95 transition disabled:opacity-50"
+                title="快捷键：Ctrl + Enter (⌘ + Enter)"
              >
                 {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
                 <span>{loading ? '编译中...' : '生成 PDF'}</span>
@@ -312,6 +313,8 @@ function App() {
                   <span className={`text-[10px] transition-opacity duration-300 ${isSaved ? 'text-green-500 opacity-100' : 'text-apple-gray-200 opacity-50'}`}>
                     {isSaved ? '● 已保存' : '○ 正在输入...'}
                   </span>
+                  <div className="h-3 w-[1px] bg-apple-gray-100" />
+                  <span className="text-[10px] text-apple-gray-200 font-medium">Ctrl + Enter 编译</span>
                 </div>
                 <span className="text-[10px] text-apple-gray-200 font-medium">{markdown.length.toLocaleString()} 字符</span>
              </div>
