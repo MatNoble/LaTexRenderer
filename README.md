@@ -2,6 +2,8 @@
 
 [English](README.md) | [简体中文](README_ZH.md)
 
+![Preview](doc/preview.png)
+
 This project provides a utility to convert Markdown files, especially those containing mathematical expressions, into LaTeX documents. It's designed for academic or technical writing where LaTeX is preferred for its typesetting quality.
 
 ## Project Structure

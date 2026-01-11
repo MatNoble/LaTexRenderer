@@ -2,6 +2,8 @@
 
 [English](README.md) | [简体中文](README_ZH.md)
 
+![预览图](doc/preview.png)
+
 本项目提供了一个将 Markdown 文件（特别是包含数学公式的文件）转换为 LaTeX 文档的工具。它专为倾向于使用 LaTeX 进行排版以获得高质量文档的学术或技术写作场景而设计。
 
 ## 项目结构
