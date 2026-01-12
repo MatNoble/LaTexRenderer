@@ -189,7 +189,7 @@ function App() {
         <div className="p-6 flex items-center gap-3">
           <img src="/icons/web-app-manifest-192x192.png" alt="Logo" className="w-10 h-10 rounded-apple shadow-lg" />
           <div className="overflow-hidden whitespace-nowrap">
-            <h1 className="font-bold text-lg">LaTexRender</h1>
+            <h1 className="font-bold text-lg">LaTeXRenderer</h1>
             <p className="text-xs text-apple-gray-300">v1.1.0 • Stable</p>
           </div>
         </div>
